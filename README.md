@@ -285,30 +285,6 @@ Found a bug? [Open an issue](https://github.com/1r0n3d3v3l0per/recesso-facile/is
 
 ---
 
-## 🗺️ Roadmap
-
-### v1.1.0 (Q3 2026)
-- [ ] Multi-language support (EN, FR, DE, ES)
-- [ ] Product condition assessment (photos upload)
-- [ ] Return shipping label generation
-- [ ] Integration with major carriers (DHL, GLS, etc.)
-
-### v1.2.0 (Q4 2026)
-- [ ] Customer portal (track withdrawal status)
-- [ ] Automatic refund processing
-- [ ] Analytics dashboard
-- [ ] Email builder (visual editor)
-
-### v2.0.0 (Q1 2027)
-- [ ] Multi-site support
-- [ ] Marketplace integrations (Amazon, eBay)
-- [ ] Advanced fraud detection algorithms
-- [ ] Mobile app (iOS/Android)
-
-[Vote for features →](https://github.com/1r0n3d3v3l0per/recesso-facile/discussions)
-
----
-
 ## 💡 Why Open Source?
 
 This plugin was created to help **Italian merchants comply with the law** without paying expensive monthly subscriptions for simple withdrawal management.
