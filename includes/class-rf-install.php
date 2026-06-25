@@ -16,8 +16,12 @@ class RF_Install {
 
     /**
      * Database version
+     *
+     * Must match RF_Update::DB_VERSION so that a fresh install (whose schema
+     * is already current) does not trigger a redundant migration on the next
+     * page load.
      */
-    const DB_VERSION = '1.0.0';
+    const DB_VERSION = '1.0.1';
 
     /**
      * Activate plugin
