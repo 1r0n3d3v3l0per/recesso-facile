@@ -275,16 +275,6 @@ Found a bug? [Open an issue](https://github.com/1r0n3d3v3l0per/recesso-facile/is
 
 ---
 
-## 📊 Stats & Metrics
-
-- ⭐ **0** Stars (Help us reach 100!)
-- 🍴 **0** Forks
-- 🐛 **0** Open Issues
-- 📦 **v1.0.1** Latest Version
-- 📅 Last Updated: June 25, 2026
-
----
-
 ## 💡 Why Open Source?
 
 This plugin was created to help **Italian merchants comply with the law** without paying expensive monthly subscriptions for simple withdrawal management.

@@ -42,6 +42,12 @@ class RF_Install {
         self::create_withdrawal_page();
         self::schedule_events();
 
+        // Create the protected receipts directory (with .htaccess deny rule)
+        // up front, so receipt PDFs are never web-accessible.
+        if (class_exists('RF_PDF_Service')) {
+            RF_PDF_Service::get_receipts_dir();
+        }
+
         // Save version
         update_option('recesso_facile_version', RF_VERSION);
         update_option('recesso_facile_db_version', self::DB_VERSION);

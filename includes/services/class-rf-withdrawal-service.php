@@ -24,6 +24,13 @@ class RF_Withdrawal_Service {
     public static function create_withdrawal($data) {
         global $wpdb;
 
+        // Throttle abusive/automated submissions (covers both the public AJAX
+        // and REST entry points, neither of which is authenticated).
+        $rate_limit = self::check_rate_limit();
+        if (is_wp_error($rate_limit)) {
+            return $rate_limit;
+        }
+
         // Validate required fields
         $validation = RF_Validator::validate_withdrawal_request($data);
         if (is_wp_error($validation)) {
@@ -346,6 +353,41 @@ class RF_Withdrawal_Service {
 
         $hash_string = wp_json_encode($hash_data);
         return hash('sha256', $hash_string);
+    }
+
+    /**
+     * Simple per-IP rate limiter for withdrawal creation.
+     *
+     * Allows a burst of requests within a sliding window using a transient.
+     * Logged-in shop managers are exempt. Defaults: 5 requests / 10 minutes,
+     * filterable via 'recesso_facile_rate_limit'.
+     *
+     * @return true|WP_Error
+     */
+    private static function check_rate_limit() {
+        if (current_user_can('manage_woocommerce')) {
+            return true;
+        }
+
+        $limits = apply_filters('recesso_facile_rate_limit', array(
+            'max'    => 5,
+            'window' => 10 * MINUTE_IN_SECONDS,
+        ));
+
+        $ip  = self::get_client_ip();
+        $key = 'rf_rl_' . md5($ip);
+
+        $count = (int) get_transient($key);
+        if ($count >= (int) $limits['max']) {
+            return new WP_Error(
+                'rate_limited',
+                __('Troppe richieste. Riprova tra qualche minuto.', 'recesso-facile')
+            );
+        }
+
+        set_transient($key, $count + 1, (int) $limits['window']);
+
+        return true;
     }
 
     /**

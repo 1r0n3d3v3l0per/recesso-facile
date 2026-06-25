@@ -4,7 +4,7 @@ Tags: woocommerce, recesso, diritto di recesso, consumer rights, ecommerce, ital
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -133,6 +133,13 @@ Sì, il plugin dichiara piena compatibilità con WooCommerce High-Performance Or
 
 == Changelog ==
 
+= 1.0.2 - 2026-06-25 =
+* Sicurezza: le ricevute PDF non sono più accessibili pubblicamente via URL
+  (nome file basato su hash non indovinabile, cartella protetta con .htaccess,
+  download solo previa verifica di identità o token ricevuta)
+* Sicurezza: rate limiting sulla creazione richieste (AJAX e REST) contro lo spam
+* Rimossi riferimenti e date non applicabili dalla documentazione
+
 = 1.0.1 - 2026-06-25 =
 * Campo nome cliente nel form di recesso (conformità Art. 54-bis)
 * Integrazione WooCommerce (pulsante pagina ordine, email, metabox admin)
@@ -154,6 +161,9 @@ Sì, il plugin dichiara piena compatibilità con WooCommerce High-Performance Or
 * Responsive design
 
 == Upgrade Notice ==
+
+= 1.0.2 =
+Aggiornamento di sicurezza importante: protegge le ricevute PDF da accessi non autorizzati. Aggiornamento consigliato a tutti.
 
 = 1.0.1 =
 Aggiunto campo nome cliente, integrazione WooCommerce e riferimenti normativi aggiornati (D.Lgs. 209/2025).

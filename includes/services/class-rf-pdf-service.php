@@ -42,15 +42,10 @@ class RF_PDF_Service {
         // Generate PDF using native PHP (no external library needed for simple PDF)
         $pdf_content = self::html_to_pdf($html);
 
-        // Save PDF file
-        $upload_dir = wp_upload_dir();
-        $pdf_dir = $upload_dir['basedir'] . '/recesso-facile/receipts/';
+        // Save PDF file in a protected directory
+        $pdf_dir = self::get_receipts_dir();
 
-        if (!file_exists($pdf_dir)) {
-            wp_mkdir_p($pdf_dir);
-        }
-
-        $pdf_filename = sprintf('ricevuta-recesso-%d.pdf', $withdrawal_id);
+        $pdf_filename = self::get_pdf_filename($withdrawal);
         $pdf_path = $pdf_dir . $pdf_filename;
 
         $saved = file_put_contents($pdf_path, $pdf_content);
@@ -312,44 +307,134 @@ class RF_PDF_Service {
     }
 
     /**
-     * Get PDF download URL
+     * Get the protected receipts directory, creating it (and its access
+     * guards) if needed.
+     *
+     * Receipts contain personal data (name, email, order, reason, IBAN), so
+     * the directory is hardened against direct web access with an .htaccess
+     * deny rule and an empty index.php. PDFs are served only through the
+     * authenticated download() method below, never via a public URL.
+     *
+     * @return string Absolute path with trailing slash
+     */
+    public static function get_receipts_dir() {
+        $upload_dir = wp_upload_dir();
+        $pdf_dir = trailingslashit($upload_dir['basedir']) . 'recesso-facile/receipts/';
+
+        if (!file_exists($pdf_dir)) {
+            wp_mkdir_p($pdf_dir);
+        }
+
+        // Deny direct HTTP access (Apache). Nginx setups should block the
+        // /uploads/recesso-facile/ path at the server level.
+        $htaccess = $pdf_dir . '.htaccess';
+        if (!file_exists($htaccess)) {
+            file_put_contents($htaccess, "Order Deny,Allow\nDeny from all\n");
+        }
+
+        // Prevent directory listing.
+        $index = $pdf_dir . 'index.php';
+        if (!file_exists($index)) {
+            file_put_contents($index, "<?php\n// Silence is golden.\n");
+        }
+
+        return $pdf_dir;
+    }
+
+    /**
+     * Build the receipt filename from the unguessable receipt hash so files
+     * cannot be enumerated by sequential ID.
+     *
+     * @param object $withdrawal Withdrawal object
+     * @return string Filename
+     */
+    private static function get_pdf_filename($withdrawal) {
+        $token = !empty($withdrawal->receipt_hash)
+            ? $withdrawal->receipt_hash
+            : hash('sha256', (string) $withdrawal->id . wp_salt());
+
+        return 'ricevuta-recesso-' . $token . '.pdf';
+    }
+
+    /**
+     * Get absolute path to a withdrawal's receipt PDF (no web URL is exposed).
      *
      * @param int $withdrawal_id Withdrawal ID
-     * @return string|false URL or false if not found
+     * @return string|false Path or false if not found
      */
-    public static function get_pdf_url($withdrawal_id) {
-        $upload_dir = wp_upload_dir();
-        $pdf_filename = sprintf('ricevuta-recesso-%d.pdf', $withdrawal_id);
-        $pdf_path = $upload_dir['basedir'] . '/recesso-facile/receipts/' . $pdf_filename;
+    public static function get_pdf_path($withdrawal_id) {
+        $withdrawal = RF_Withdrawal_Service::get_withdrawal($withdrawal_id);
+        if (!$withdrawal) {
+            return false;
+        }
 
-        if (file_exists($pdf_path)) {
-            return $upload_dir['baseurl'] . '/recesso-facile/receipts/' . $pdf_filename;
+        $pdf_path = self::get_receipts_dir() . self::get_pdf_filename($withdrawal);
+
+        return file_exists($pdf_path) ? $pdf_path : false;
+    }
+
+    /**
+     * Check whether the current request is allowed to access a receipt.
+     *
+     * Allowed: shop managers, the logged-in customer who owns the order, or a
+     * request carrying the matching receipt_hash token (the value e-mailed to
+     * the customer). This is what makes the download authenticated.
+     *
+     * @param object $withdrawal Withdrawal object
+     * @param string $token      Optional receipt_hash supplied by the request
+     * @return bool
+     */
+    private static function can_access_receipt($withdrawal, $token = '') {
+        if (current_user_can('manage_woocommerce')) {
+            return true;
+        }
+
+        if (is_user_logged_in()
+            && (int) $withdrawal->customer_id === get_current_user_id()
+            && (int) $withdrawal->customer_id !== 0) {
+            return true;
+        }
+
+        if (!empty($token)
+            && !empty($withdrawal->receipt_hash)
+            && hash_equals($withdrawal->receipt_hash, $token)) {
+            return true;
         }
 
         return false;
     }
 
     /**
-     * Force download PDF
+     * Stream a receipt PDF to the browser after an authorization check.
      *
-     * @param int $withdrawal_id Withdrawal ID
+     * @param int    $withdrawal_id Withdrawal ID
+     * @param string $token         Optional receipt_hash for token-based access
+     * @return void|WP_Error
      */
-    public static function download_pdf($withdrawal_id) {
-        $upload_dir = wp_upload_dir();
-        $pdf_filename = sprintf('ricevuta-recesso-%d.pdf', $withdrawal_id);
-        $pdf_path = $upload_dir['basedir'] . '/recesso-facile/receipts/' . $pdf_filename;
+    public static function download($withdrawal_id, $token = '') {
+        $withdrawal = RF_Withdrawal_Service::get_withdrawal($withdrawal_id);
+        if (!$withdrawal) {
+            return new WP_Error('not_found', __('Ricevuta non trovata.', 'recesso-facile'));
+        }
 
+        if (!self::can_access_receipt($withdrawal, $token)) {
+            return new WP_Error('forbidden', __('Non sei autorizzato ad accedere a questa ricevuta.', 'recesso-facile'));
+        }
+
+        $pdf_path = self::get_receipts_dir() . self::get_pdf_filename($withdrawal);
         if (!file_exists($pdf_path)) {
-            // Generate if doesn't exist
             $pdf_path = self::generate_receipt($withdrawal_id);
         }
 
         if ($pdf_path && file_exists($pdf_path)) {
+            nocache_headers();
             header('Content-Type: application/pdf');
-            header('Content-Disposition: attachment; filename="' . $pdf_filename . '"');
+            header('Content-Disposition: attachment; filename="ricevuta-recesso-' . absint($withdrawal_id) . '.pdf"');
             header('Content-Length: ' . filesize($pdf_path));
             readfile($pdf_path);
             exit;
         }
+
+        return new WP_Error('generation_failed', __('Impossibile generare la ricevuta.', 'recesso-facile'));
     }
 }
