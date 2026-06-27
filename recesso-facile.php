@@ -3,7 +3,7 @@
  * Plugin Name: Recesso Facile
  * Plugin URI: https://irn3.com/recesso-facile
  * Description: Soluzione completa per la gestione del diritto di recesso conforme all'Art. 54-bis del Codice del Consumo italiano. Easy In, Easy Out.
- * Version: 1.0.4
+ * Version: 1.1.0
  * Author: Andrea Ferro
  * Author URI: https://irn3.com
  * License: GPL v2 or later
@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('RF_VERSION', '1.0.4');
+define('RF_VERSION', '1.1.0');
 define('RF_PLUGIN_FILE', __FILE__);
 define('RF_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RF_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -32,7 +32,7 @@ define('RF_PLUGIN_BASENAME', plugin_basename(__FILE__));
  * Main Recesso Facile Class
  *
  * @class Recesso_Facile
- * @version 1.0.4
+ * @version 1.1.0
  */
 final class Recesso_Facile {
 
@@ -96,6 +96,7 @@ final class Recesso_Facile {
         if (is_admin()) {
             add_action('admin_menu', array($this, 'admin_menu'));
             add_action('admin_enqueue_scripts', array($this, 'admin_scripts'));
+            add_action('admin_init', array('RF_Admin_Requests', 'init'));
         }
 
         // Frontend hooks

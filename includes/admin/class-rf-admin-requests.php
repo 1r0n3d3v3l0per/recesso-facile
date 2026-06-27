@@ -15,6 +15,88 @@ if (!defined('ABSPATH')) {
 class RF_Admin_Requests {
 
     /**
+     * Register admin hooks (CSV export endpoint).
+     */
+    public static function init() {
+        add_action('admin_post_rf_export_csv', array(__CLASS__, 'export_csv'));
+    }
+
+    /**
+     * Stream the withdrawal requests as a CSV file.
+     *
+     * Honors the current status filter. Requires the manage_woocommerce
+     * capability and a valid nonce. Runs on admin_post (before any output) so
+     * headers can be sent cleanly.
+     */
+    public static function export_csv() {
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Non hai i permessi per esportare i dati.', 'recesso-facile'));
+        }
+
+        check_admin_referer('rf_export_csv');
+
+        global $wpdb;
+
+        $status_filter = isset($_GET['status']) ? sanitize_key($_GET['status']) : '';
+        $where = '';
+        if ($status_filter) {
+            $where = $wpdb->prepare('WHERE status = %s', $status_filter);
+        }
+
+        $rows = $wpdb->get_results(
+            "SELECT id, order_id, customer_name, email, status, reason,
+                    refund_method, request_date, completion_date, ip_address, receipt_hash
+             FROM {$wpdb->prefix}rf_withdrawals
+             $where
+             ORDER BY created_at DESC"
+        );
+
+        $filename = 'recesso-facile-richieste-' . gmdate('Y-m-d') . '.csv';
+
+        nocache_headers();
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $out = fopen('php://output', 'w');
+
+        // UTF-8 BOM so Excel opens accented characters correctly.
+        fwrite($out, "\xEF\xBB\xBF");
+
+        fputcsv($out, array(
+            __('ID', 'recesso-facile'),
+            __('Ordine', 'recesso-facile'),
+            __('Nome Cliente', 'recesso-facile'),
+            __('Email', 'recesso-facile'),
+            __('Status', 'recesso-facile'),
+            __('Motivo', 'recesso-facile'),
+            __('Metodo Rimborso', 'recesso-facile'),
+            __('Data Richiesta', 'recesso-facile'),
+            __('Data Completamento', 'recesso-facile'),
+            __('Indirizzo IP', 'recesso-facile'),
+            __('Hash Ricevuta', 'recesso-facile'),
+        ));
+
+        foreach ($rows as $r) {
+            fputcsv($out, array(
+                $r->id,
+                $r->order_id,
+                $r->customer_name,
+                $r->email,
+                $r->status,
+                $r->reason,
+                $r->refund_method,
+                $r->request_date,
+                $r->completion_date,
+                $r->ip_address,
+                $r->receipt_hash,
+            ));
+        }
+
+        fclose($out);
+        exit;
+    }
+
+    /**
      * Render requests page
      */
     public static function render() {
@@ -64,9 +146,16 @@ class RF_Admin_Requests {
 
         $total_pages = $per_page > 0 ? ceil($total / $per_page) : 1;
 
+        $export_url = wp_nonce_url(
+            admin_url('admin-post.php?action=rf_export_csv' . ($status_filter ? '&status=' . $status_filter : '')),
+            'rf_export_csv'
+        );
+
         ?>
         <div class="wrap">
-            <h1><?php _e('Richieste di Recesso', 'recesso-facile'); ?></h1>
+            <h1 class="wp-heading-inline"><?php _e('Richieste di Recesso', 'recesso-facile'); ?></h1>
+            <a href="<?php echo esc_url($export_url); ?>" class="page-title-action"><?php _e('Esporta CSV', 'recesso-facile'); ?></a>
+            <hr class="wp-header-end">
 
             <!-- Status Filter -->
             <ul class="subsubsub">

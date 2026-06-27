@@ -33,6 +33,8 @@ class RF_Admin_Settings {
                 'rf_withdrawal_period'    => 'int',
                 'rf_enable_sticky_button' => 'checkbox',
                 'rf_button_text'          => 'text',
+                'rf_legal_button_text'    => 'text',
+                'rf_confirm_button_text'  => 'text',
                 'rf_button_position'      => 'text',
                 'rf_withdrawal_page'      => 'int',
             ),
@@ -177,10 +179,31 @@ class RF_Admin_Settings {
 
             <tr>
                 <th scope="row">
-                    <label for="rf_button_text"><?php _e('Testo Bottone', 'recesso-facile'); ?></label>
+                    <label for="rf_button_text"><?php _e('Testo Bottone Flottante', 'recesso-facile'); ?></label>
                 </th>
                 <td>
                     <input type="text" name="rf_button_text" id="rf_button_text" value="<?php echo esc_attr(get_option('rf_button_text', __('Richiedi Recesso', 'recesso-facile'))); ?>" class="regular-text">
+                    <p class="description"><?php _e('Testo del bottone fisso che porta al modulo di recesso.', 'recesso-facile'); ?></p>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="rf_legal_button_text"><?php _e('Dicitura Funzione di Recesso', 'recesso-facile'); ?></label>
+                </th>
+                <td>
+                    <input type="text" name="rf_legal_button_text" id="rf_legal_button_text" value="<?php echo esc_attr(get_option('rf_legal_button_text', __('Recedere dal contratto qui', 'recesso-facile'))); ?>" class="regular-text">
+                    <p class="description"><?php _e('Dicitura mostrata in cima al modulo. La legge (Art. 54-bis / Dir. UE 2023/2673) richiede "Recedere dal contratto qui" o formulazione equivalente inequivocabile.', 'recesso-facile'); ?></p>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="rf_confirm_button_text"><?php _e('Testo Pulsante di Conferma', 'recesso-facile'); ?></label>
+                </th>
+                <td>
+                    <input type="text" name="rf_confirm_button_text" id="rf_confirm_button_text" value="<?php echo esc_attr(get_option('rf_confirm_button_text', __('Conferma recesso', 'recesso-facile'))); ?>" class="regular-text">
+                    <p class="description"><?php _e('Testo del pulsante finale di invio. La legge richiede "Conferma recesso" o formulazione equivalente inequivocabile.', 'recesso-facile'); ?></p>
                 </td>
             </tr>
 

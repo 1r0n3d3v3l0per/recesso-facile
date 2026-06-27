@@ -259,8 +259,9 @@ class RF_Email_Service {
         }
 
         if (!file_exists($template_path)) {
-            // Fallback to default content
-            return self::get_default_email_content($template, $args);
+            // Fallback to built-in content (already wrapped in the HTML shell).
+            $content = self::get_default_email_content($template, $args);
+            return apply_filters('recesso_facile_email_content', $content, $template, $args);
         }
 
         ob_start();
@@ -271,6 +272,10 @@ class RF_Email_Service {
         $reason = isset($args['reason']) ? $args['reason'] : null;
         include $template_path;
         $content = ob_get_clean();
+
+        // Wrap the template fragment in the shared HTML shell for consistent
+        // styling, then allow filtering of the final content.
+        $content = self::wrap_email_content($content);
 
         return apply_filters('recesso_facile_email_content', $content, $template, $args);
     }
@@ -293,22 +298,36 @@ class RF_Email_Service {
 
         switch ($template) {
             case 'customer-confirmation':
+                // Acknowledgement of receipt on a durable medium, with the
+                // exact date and time of receipt (Art. 54-bis / EU Dir.
+                // 2023/2673, art. 11-bis).
+                $received_at = date_i18n(
+                    get_option('date_format') . ' ' . get_option('time_format'),
+                    strtotime($withdrawal->request_date)
+                );
+
                 $content = sprintf(
                     '<h2>%s</h2>
                     <p>%s</p>
-                    <p><strong>%s:</strong> #%d</p>
-                    <p><strong>%s:</strong> #%d</p>
                     <p><strong>%s:</strong> %s</p>
-                    <p>%s</p>',
-                    __('Richiesta di recesso ricevuta', 'recesso-facile'),
-                    __('Abbiamo ricevuto la tua richiesta di recesso e la stiamo elaborando.', 'recesso-facile'),
+                    <p><strong>%s:</strong> #%d</p>
+                    <p><strong>%s:</strong> #%d</p>
+                    <p>%s</p>
+                    <p style="font-size:12px;color:#666;">%s</p>',
+                    __('Avviso di ricevimento della richiesta di recesso', 'recesso-facile'),
+                    __('Con la presente confermiamo di aver ricevuto la tua richiesta di recesso. Questo messaggio costituisce avviso di ricevimento su supporto durevole.', 'recesso-facile'),
+                    __('Data e ora di ricezione', 'recesso-facile'),
+                    esc_html($received_at),
                     __('Numero richiesta', 'recesso-facile'),
                     $withdrawal->id,
                     __('Ordine', 'recesso-facile'),
                     $withdrawal->order_id,
-                    __('Data richiesta', 'recesso-facile'),
-                    date_i18n(get_option('date_format'), strtotime($withdrawal->request_date)),
-                    __('Riceverai un aggiornamento via email appena elaboreremo la tua richiesta.', 'recesso-facile')
+                    __('Riceverai un aggiornamento via email appena elaboreremo la tua richiesta. In allegato trovi la ricevuta in formato PDF.', 'recesso-facile'),
+                    sprintf(
+                        /* translators: %s: receipt hash */
+                        __('Codice ricevuta: %s', 'recesso-facile'),
+                        esc_html($withdrawal->receipt_hash)
+                    )
                 );
                 break;
 
@@ -328,7 +347,7 @@ class RF_Email_Service {
                     __('Ordine', 'recesso-facile'),
                     $withdrawal->order_id,
                     __('Cliente', 'recesso-facile'),
-                    $withdrawal->email,
+                    esc_html($withdrawal->email),
                     __('Motivo', 'recesso-facile'),
                     esc_html($withdrawal->reason),
                     admin_url('admin.php?page=recesso-facile-requests&action=view&id=' . $withdrawal->id),

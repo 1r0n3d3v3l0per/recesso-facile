@@ -172,6 +172,11 @@ class RF_Install {
             'rf_button_text' => __('Richiedi Recesso', 'recesso-facile'),
             'rf_button_position' => 'bottom-right',
 
+            // Legal wording (Art. 54-bis / EU Dir. 2023/2673, art. 11-bis):
+            // defaults match the wording required by law but stay editable.
+            'rf_legal_button_text' => __('Recedere dal contratto qui', 'recesso-facile'),
+            'rf_confirm_button_text' => __('Conferma recesso', 'recesso-facile'),
+
             // Email settings
             'rf_enable_customer_email' => 'yes',
             'rf_enable_admin_email' => 'yes',

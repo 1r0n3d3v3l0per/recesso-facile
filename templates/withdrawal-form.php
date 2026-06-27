@@ -12,6 +12,9 @@ if (!defined('ABSPATH')) {
 ?>
 
 <div class="rf-withdrawal-form-wrapper">
+    <!-- Legal withdrawal-function heading (Art. 54-bis / EU Dir. 2023/2673) -->
+    <h2 class="rf-legal-heading"><?php echo esc_html(get_option('rf_legal_button_text', __('Recedere dal contratto qui', 'recesso-facile'))); ?></h2>
+
     <!-- Progress Indicator -->
     <div class="rf-progress">
         <div class="rf-progress-step rf-step-active" data-step="1">
@@ -271,7 +274,7 @@ if (!defined('ABSPATH')) {
                     ← <?php _e('Indietro', 'recesso-facile'); ?>
                 </button>
                 <button type="submit" class="rf-button rf-button-primary rf-button-submit" id="rf-submit-withdrawal">
-                    <?php _e('Invia Richiesta di Recesso', 'recesso-facile'); ?>
+                    <?php echo esc_html(get_option('rf_confirm_button_text', __('Conferma recesso', 'recesso-facile'))); ?>
                 </button>
             </div>
         </div>

@@ -4,7 +4,7 @@ Tags: woocommerce, recesso, diritto di recesso, consumer rights, ecommerce, ital
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.0.4
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -133,6 +133,16 @@ Sì, il plugin dichiara piena compatibilità con WooCommerce High-Performance Or
 
 == Changelog ==
 
+= 1.1.0 - 2026-06-27 =
+* Nuovo: diciture conformi di default ("Recedere dal contratto qui" e
+  "Conferma recesso"), personalizzabili dalle impostazioni.
+* Nuovo: avviso di ricevimento via email su supporto durevole, con data e
+  ora di ricezione e ricevuta PDF allegata.
+* Nuovo: template email reali sovrascrivibili dal tema.
+* Nuovo: export CSV delle richieste dal pannello, nel rispetto del filtro
+  per stato.
+* Migliorie di escaping e coerenza nelle email di fallback.
+
 = 1.0.4 - 2026-06-27 =
 * Correzione: le impostazioni a schede (tab) non azzerano più le caselle
   degli altri tab quando se ne salva uno. Il salvataggio è ora circoscritto
@@ -183,6 +193,9 @@ Sì, il plugin dichiara piena compatibilità con WooCommerce High-Performance Or
 * Responsive design
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+Diciture conformi, avviso di ricevimento su supporto durevole, template email sovrascrivibili ed export CSV.
 
 = 1.0.4 =
 Diverse correzioni importanti, tra cui il salvataggio delle impostazioni a schede. Aggiornamento consigliato a tutti.
