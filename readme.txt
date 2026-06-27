@@ -4,7 +4,7 @@ Tags: woocommerce, recesso, diritto di recesso, consumer rights, ecommerce, ital
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -133,6 +133,22 @@ Sì, il plugin dichiara piena compatibilità con WooCommerce High-Performance Or
 
 == Changelog ==
 
+= 1.0.4 - 2026-06-27 =
+* Correzione: le impostazioni a schede (tab) non azzerano più le caselle
+  degli altri tab quando se ne salva uno. Il salvataggio è ora circoscritto
+  alla scheda effettivamente inviata.
+* Correzione: l'endpoint REST di creazione richieste non inviava il campo
+  nome cliente (obbligatorio), facendo fallire sempre la creazione via API.
+* Correzione: il cleanup automatico giornaliero (opzione "Elimina vecchie
+  richieste") non veniva mai eseguito perché privo di gestore. Ora funziona.
+* Correzione: aggiornamento stato richiesta più robusto nella scrittura della
+  data di completamento e delle note.
+* Correzione: gestione di ordini senza data (no errori fatali nel form e PDF).
+* Correzione: metabox ordine registrato una sola volta e compatibile HPOS in
+  modo sicuro.
+* Correzione: l'eliminazione di una richiesta inesistente non segnala più
+  "eliminata con successo".
+
 = 1.0.3 - 2026-06-25 =
 * Correzione: allineata la versione del database all'attivazione, evitando
   una migrazione ridondante al primo caricamento su installazioni nuove
@@ -167,6 +183,9 @@ Sì, il plugin dichiara piena compatibilità con WooCommerce High-Performance Or
 * Responsive design
 
 == Upgrade Notice ==
+
+= 1.0.4 =
+Diverse correzioni importanti, tra cui il salvataggio delle impostazioni a schede. Aggiornamento consigliato a tutti.
 
 = 1.0.3 =
 Correzione minore alla gestione della versione del database. Aggiornamento consigliato.
