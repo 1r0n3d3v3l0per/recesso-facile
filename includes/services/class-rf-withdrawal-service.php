@@ -165,11 +165,14 @@ class RF_Withdrawal_Service {
             $update_data['completion_date'] = current_time('mysql');
         }
 
+        // $update_data is built dynamically (1-3 keys), so a fixed positional
+        // format array would misalign. All these columns are strings; passing
+        // null lets WordPress format every value as %s by key.
         $result = $wpdb->update(
             $wpdb->prefix . 'rf_withdrawals',
             $update_data,
             array('id' => $withdrawal_id),
-            array('%s', '%s', '%s'),
+            null,
             array('%d')
         );
 

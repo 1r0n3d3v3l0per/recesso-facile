@@ -132,7 +132,7 @@ class RF_PDF_Service {
                 </div>
                 <div class="info-row">
                     <span class="info-label">Data Ordine:</span>
-                    <span><?php echo date_i18n('d/m/Y', $order->get_date_created()->getTimestamp()); ?></span>
+                    <span><?php $created = $order->get_date_created(); echo $created ? esc_html(date_i18n('d/m/Y', $created->getTimestamp())) : '-'; ?></span>
                 </div>
             </div>
 

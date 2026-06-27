@@ -196,19 +196,22 @@ class RF_WooCommerce_Integration {
      * Add metabox to admin order page
      */
     public static function add_admin_order_metabox() {
-        add_meta_box(
-            'rf_order_withdrawal',
-            __('Recesso Facile', 'recesso-facile'),
-            array(__CLASS__, 'render_admin_order_metabox'),
-            'shop_order',
-            'side',
-            'default'
-        );
+        // Resolve the correct screen for HPOS (custom order tables) vs the
+        // legacy post-based order screen, guarding the container lookup so it
+        // never fatals on environments where HPOS classes aren't available.
+        $screen = 'shop_order';
 
-        // HPOS compatibility
-        $screen = wc_get_container()->get(\Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController::class)->custom_orders_table_usage_is_enabled()
-            ? wc_get_page_screen_id('shop-order')
-            : 'shop_order';
+        if (function_exists('wc_get_container')
+            && class_exists('\Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController')) {
+            try {
+                $controller = wc_get_container()->get(\Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController::class);
+                if ($controller && $controller->custom_orders_table_usage_is_enabled()) {
+                    $screen = wc_get_page_screen_id('shop-order');
+                }
+            } catch (\Exception $e) {
+                $screen = 'shop_order';
+            }
+        }
 
         add_meta_box(
             'rf_order_withdrawal',

@@ -15,6 +15,57 @@ if (!defined('ABSPATH')) {
 class RF_Admin_Settings {
 
     /**
+     * Map of settings tabs to the options they own.
+     *
+     * Each tab's form only renders its own fields, so saving must be scoped to
+     * the submitted tab. Saving every option on every submit would reset the
+     * checkboxes belonging to the other tabs (they aren't in $_POST).
+     *
+     * 'checkbox' options default to 'no' when absent from the submission;
+     * 'int' / 'email' / 'text' / 'textarea' are sanitized accordingly.
+     *
+     * @var array<string, array<string, string>>
+     */
+    private static function get_tab_settings() {
+        return array(
+            'general' => array(
+                'rf_enable_withdrawal'    => 'checkbox',
+                'rf_withdrawal_period'    => 'int',
+                'rf_enable_sticky_button' => 'checkbox',
+                'rf_button_text'          => 'text',
+                'rf_button_position'      => 'text',
+                'rf_withdrawal_page'      => 'int',
+            ),
+            'emails' => array(
+                'rf_enable_customer_email' => 'checkbox',
+                'rf_enable_admin_email'    => 'checkbox',
+                'rf_admin_email'           => 'email',
+                'rf_email_from_name'       => 'text',
+                'rf_email_from_address'    => 'email',
+            ),
+            'form' => array(
+                'rf_require_reason'             => 'checkbox',
+                'rf_enable_additional_notes'   => 'checkbox',
+                'rf_enable_guest_withdrawal'   => 'checkbox',
+                'rf_enable_double_confirmation' => 'checkbox',
+                'rf_enable_bank_transfer'      => 'checkbox',
+                'rf_enable_store_credit'       => 'checkbox',
+            ),
+            'pdf' => array(
+                'rf_enable_pdf'          => 'checkbox',
+                'rf_pdf_company_name'    => 'text',
+                'rf_pdf_company_address' => 'textarea',
+                'rf_pdf_company_vat'     => 'text',
+            ),
+            'advanced' => array(
+                'rf_enable_activity_log'       => 'checkbox',
+                'rf_auto_delete_old_requests'  => 'checkbox',
+                'rf_delete_after_days'         => 'int',
+            ),
+        );
+    }
+
+    /**
      * Render settings page
      */
     public static function render() {
@@ -22,9 +73,10 @@ class RF_Admin_Settings {
             wp_die(__('Non hai i permessi per accedere a questa pagina.', 'recesso-facile'));
         }
 
-        // Save settings
+        // Save settings (scoped to the submitted tab)
         if (isset($_POST['rf_save_settings']) && check_admin_referer('rf_save_settings')) {
-            self::save_settings();
+            $saved_tab = isset($_POST['rf_current_tab']) ? sanitize_key($_POST['rf_current_tab']) : 'general';
+            self::save_settings($saved_tab);
             echo '<div class="notice notice-success"><p>' . esc_html__('Impostazioni salvate con successo.', 'recesso-facile') . '</p></div>';
         }
 
@@ -54,6 +106,7 @@ class RF_Admin_Settings {
 
             <form method="post" action="">
                 <?php wp_nonce_field('rf_save_settings'); ?>
+                <input type="hidden" name="rf_current_tab" value="<?php echo esc_attr($current_tab); ?>">
 
                 <?php
                 switch ($current_tab) {
@@ -378,72 +431,47 @@ class RF_Admin_Settings {
     }
 
     /**
-     * Save settings
+     * Save settings for a single tab.
+     *
+     * Only the options belonging to $tab are touched, so saving one tab never
+     * resets the checkboxes of the others. Checkboxes absent from the POST are
+     * treated as unchecked ('no') — but only within the submitted tab.
+     *
+     * @param string $tab The tab whose form was submitted
      */
-    private static function save_settings() {
-        $settings = array(
-            // General
-            'rf_enable_withdrawal',
-            'rf_withdrawal_period',
-            'rf_enable_sticky_button',
-            'rf_button_text',
-            'rf_button_position',
-            'rf_withdrawal_page',
-            // Email
-            'rf_enable_customer_email',
-            'rf_enable_admin_email',
-            'rf_admin_email',
-            'rf_email_from_name',
-            'rf_email_from_address',
-            // Form
-            'rf_require_reason',
-            'rf_enable_additional_notes',
-            'rf_enable_guest_withdrawal',
-            'rf_enable_double_confirmation',
-            'rf_enable_bank_transfer',
-            'rf_enable_store_credit',
-            // PDF
-            'rf_enable_pdf',
-            'rf_pdf_company_name',
-            'rf_pdf_company_address',
-            'rf_pdf_company_vat',
-            // Advanced
-            'rf_enable_activity_log',
-            'rf_auto_delete_old_requests',
-            'rf_delete_after_days',
-        );
+    private static function save_settings($tab) {
+        $tabs = self::get_tab_settings();
 
-        foreach ($settings as $setting) {
-            if (isset($_POST[$setting])) {
-                $value = $_POST[$setting];
+        if (!isset($tabs[$tab])) {
+            return;
+        }
 
-                // Check if it's a checkbox first (they have enable/require in name)
-                $is_checkbox = (strpos($setting, 'enable') !== false ||
-                                strpos($setting, 'require') !== false ||
-                                $setting === 'rf_auto_delete_old_requests');
+        foreach ($tabs[$tab] as $setting => $type) {
+            switch ($type) {
+                case 'checkbox':
+                    // Unchecked checkboxes send no POST data.
+                    $value = isset($_POST[$setting]) ? 'yes' : 'no';
+                    break;
 
-                // Sanitize based on type
-                if ($is_checkbox) {
-                    // Checkbox value is 'yes' when checked
-                    $value = 'yes';
-                } elseif (in_array($setting, array('rf_admin_email', 'rf_email_from_address'))) {
-                    // Only sanitize as email for actual email fields
-                    $value = sanitize_email($value);
-                } elseif (in_array($setting, array('rf_withdrawal_period', 'rf_delete_after_days', 'rf_withdrawal_page'))) {
-                    $value = absint($value);
-                } elseif (in_array($setting, array('rf_pdf_company_address'))) {
-                    $value = sanitize_textarea_field($value);
-                } else {
-                    $value = sanitize_text_field($value);
-                }
+                case 'email':
+                    $value = isset($_POST[$setting]) ? sanitize_email(wp_unslash($_POST[$setting])) : '';
+                    break;
 
-                update_option($setting, $value);
-            } else {
-                // Handle unchecked checkboxes (they don't send POST data)
-                if (strpos($setting, 'enable') !== false || strpos($setting, 'require') !== false || $setting === 'rf_auto_delete_old_requests') {
-                    update_option($setting, 'no');
-                }
+                case 'int':
+                    $value = isset($_POST[$setting]) ? absint($_POST[$setting]) : 0;
+                    break;
+
+                case 'textarea':
+                    $value = isset($_POST[$setting]) ? sanitize_textarea_field(wp_unslash($_POST[$setting])) : '';
+                    break;
+
+                case 'text':
+                default:
+                    $value = isset($_POST[$setting]) ? sanitize_text_field(wp_unslash($_POST[$setting])) : '';
+                    break;
             }
+
+            update_option($setting, $value);
         }
 
         RF_Activity_Logger::log(null, 'settings_updated', __('Impostazioni aggiornate', 'recesso-facile'));

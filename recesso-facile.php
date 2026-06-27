@@ -125,7 +125,32 @@ final class Recesso_Facile {
         RF_REST_API::init();
         RF_WooCommerce_Integration::init();
 
+        // Daily cleanup cron handler (the event is scheduled on activation).
+        add_action('recesso_facile_daily_cleanup', array($this, 'run_daily_cleanup'));
+
         do_action('recesso_facile_init');
+    }
+
+    /**
+     * Daily cleanup task: removes old withdrawal requests and activity log
+     * entries when the corresponding option is enabled. Runs via WP-Cron.
+     */
+    public function run_daily_cleanup() {
+        if (get_option('rf_auto_delete_old_requests', 'no') !== 'yes') {
+            return;
+        }
+
+        $days = absint(get_option('rf_delete_after_days', 365));
+        if ($days < 1) {
+            $days = 365;
+        }
+
+        if (class_exists('RF_Withdrawal_Service')) {
+            RF_Withdrawal_Service::delete_old_requests($days);
+        }
+        if (class_exists('RF_Activity_Logger')) {
+            RF_Activity_Logger::delete_old_activities($days);
+        }
     }
 
     /**

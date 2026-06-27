@@ -100,10 +100,13 @@ class RF_Ajax_Handler {
             );
         }
 
+        $created = $order->get_date_created();
+        $order_date = $created ? date_i18n(get_option('date_format'), $created->getTimestamp()) : '';
+
         wp_send_json_success(array(
             'order_id' => $order->get_id(),
             'order_number' => $order->get_order_number(),
-            'order_date' => date_i18n(get_option('date_format'), $order->get_date_created()->getTimestamp()),
+            'order_date' => $order_date,
             'order_total' => $order->get_formatted_order_total(),
             'products' => $products,
         ));
@@ -231,6 +234,13 @@ class RF_Ajax_Handler {
         if ($result === false) {
             wp_send_json_error(array(
                 'message' => __('Errore durante l\'eliminazione.', 'recesso-facile')
+            ));
+        }
+
+        // $wpdb->delete returns 0 (not false) when no row matched.
+        if ($result === 0) {
+            wp_send_json_error(array(
+                'message' => __('Richiesta non trovata o già eliminata.', 'recesso-facile')
             ));
         }
 

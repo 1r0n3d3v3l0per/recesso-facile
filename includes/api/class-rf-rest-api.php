@@ -151,6 +151,7 @@ class RF_REST_API {
      */
     public static function create_withdrawal($request) {
         $data = array(
+            'customer_name' => $request->get_param('customer_name'),
             'order_id' => $request->get_param('order_id'),
             'email' => $request->get_param('email'),
             'reason' => $request->get_param('reason'),
